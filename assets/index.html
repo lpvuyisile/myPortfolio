@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphic Design Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Flipbook Library -->
+    <link href="https://cdn.jsdelivr.net/npm/dflip-lite@1.0.0/css/dflip.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dflip-lite@1.0.0/js/dflip.min.js"></script>
+    <style>
+        .grid-slot { aspect-ratio: 1 / 1; overflow: hidden; position: relative; border-radius: 0.75rem; background: #f4f4f5; }
+        .grid-slot img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .grid-slot:hover img { transform: scale(1.05); }
+        .overlay { background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%); opacity: 0; transition: opacity 0.3s; }
+        .grid-slot:hover .overlay { opacity: 1; }
+    </style>
+</head>
+<body class="bg-white text-zinc-900 font-sans">
+
+    <!-- Navigation -->
+    <nav class="p-6 flex justify-between items-center max-w-6xl mx-auto">
+        <h1 class="text-xl font-bold tracking-tighter italic">DESIGNER.PORTFOLIO</h1>
+        <div class="space-x-6 text-sm font-medium text-zinc-500">
+            <a href="#work" class="hover:text-black">Work</a>
+            <a href="#publication" class="hover:text-black">Publication</a>
+        </div>
+    </nav>
+
+    <!-- Hero / Publication Section -->
+    <section id="publication" class="max-w-6xl mx-auto px-6 py-12">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold">Featured Publication</h2>
+            <p class="text-zinc-500">Interactive Flipbook</p>
+        </div>
+        <div id="flipbook-container" class="w-full h-[600px] bg-zinc-100 rounded-2xl flex items-center justify-center shadow-inner">
+            <p class="text-zinc-400 animate-pulse">Loading publication...</p>
+        </div>
+    </section>
+
+    <!-- Gallery Grid -->
+    <section id="work" class="max-w-6xl mx-auto px-6 py-20">
+        <div class="mb-12">
+            <h2 class="text-3xl font-bold">Project Gallery</h2>
+            <p class="text-zinc-500">Selected Visual Works</p>
+        </div>
+        <div id="gallery-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Slots injected here -->
+        </div>
+    </section>
+
+    <footer class="py-20 text-center border-t border-zinc-100">
+        <p class="text-zinc-400 text-sm italic">© <span id="year"></span> | Designed with GitHub API</p>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        async function loadPortfolio() {
+            try {
+                // Fetch config with timestamp to prevent browser caching
+                const response = await fetch(`config.json?t=${Date.now()}`);
+                if (!response.ok) throw new Error("Config not found");
+                const data = await response.json();
+
+                // Load Flipbook
+                if (data.selectedPdf) {
+                    $("#flipbook-container").empty().dFlip(`assets/${data.selectedPdf}`, {
+                        webgl: true,
+                        height: 600
+                    });
+                } else {
+                    document.getElementById('flipbook-container').innerHTML = `<p class="text-zinc-400">No publication selected.</p>`;
+                }
+
+                // Load Gallery
+                const grid = document.getElementById('gallery-grid');
+                grid.innerHTML = '';
+                
+                data.slots.forEach(slot => {
+                    if (slot.image) {
+                        grid.innerHTML += `
+                            <div class="grid-slot shadow-sm border border-zinc-100">
+                                <img src="assets/${slot.image}" alt="${slot.name}">
+                                <div class="overlay absolute inset-0 flex flex-col justify-end p-6 text-white">
+                                    <h3 class="font-bold text-lg">${slot.name}</h3>
+                                    <p class="text-sm text-zinc-300 line-clamp-2">${slot.desc}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        grid.innerHTML += `<div class="grid-slot border-2 border-dashed border-zinc-200 flex items-center justify-center text-zinc-300 text-xs">Available Slot</div>`;
+                    }
+                });
+            } catch (err) {
+                console.error(err);
+                document.getElementById('flipbook-container').innerHTML = `<p class="text-red-400">Failed to load portfolio content.</p>`;
+            }
+        }
+        window.onload = loadPortfolio;
+    </script>
+</body>
+</html>
